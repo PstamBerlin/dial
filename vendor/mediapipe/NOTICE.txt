@@ -1,0 +1,12 @@
+MediaPipe Tasks Vision 1.2.3 (npm package @mediapipe/tasks-vision), the Face Landmarker model
+(face_landmarker.task, float16 v1) and the Selfie Multiclass segmenter (selfie_multiclass_256x256.tflite,
+float32), both from storage.googleapis.com/mediapipe-models.
+Copyright The MediaPipe Authors. Licensed under the Apache License, Version 2.0 (LICENSE-Apache-2.0.txt).
+
+Dial uses them only for "Protect skin": finding the exact outline of each face, and the skin of the neck,
+ears, arms and hands, inside the box you drag.
+Everything runs on your device and the files are loaded only when you press Protect skin.
+
+Changed by Dial (18 Nov 2026): in vision_bundle.mjs the usage-metrics logger's flush() returns at once,
+so MediaPipe never sends its usage numbers to Google. Nothing else is changed. Only the files Dial needs
+are kept (the browser bundle, one wasm build and its loader, and the model).

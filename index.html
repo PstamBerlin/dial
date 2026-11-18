@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dial · Dial it in.</title>
+<meta name="description" content="Dial it in. Dial is a free photo editor that runs in your browser: a few sliders to start, every tool when you want it. No upload, no account, no tracking.">
+<meta name="theme-color" content="#07180E">
+<link rel="icon" href="logo/dial-icon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/InstrumentSans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/InstrumentSerif.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:400 700;font-display:swap;src:url("fonts/InstrumentSans.woff2") format("woff2")}
+@font-face{font-family:"Instrument Serif";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/InstrumentSerif.woff2") format("woff2")}
+@font-face{font-family:"Instrument Serif";font-style:italic;font-weight:400;font-display:swap;src:url("fonts/InstrumentSerif-Italic.woff2") format("woff2")}
+
+/* the page's colours are real colour properties, so the background glides when the picture changes */
+@property --a-top{syntax:'<color>';inherits:false;initial-value:#030E07}
+@property --a-mid{syntax:'<color>';inherits:false;initial-value:#08261A}
+@property --a-bot{syntax:'<color>';inherits:false;initial-value:#135B34}
+@property --a-c1{syntax:'<color>';inherits:false;initial-value:#4ADE80}
+@property --a-c2{syntax:'<color>';inherits:false;initial-value:#EAB308}
+@property --a-c3{syntax:'<color>';inherits:false;initial-value:#22C55E}
+
+:root{
+  --ink:#FFFFFF; --muted:rgba(255,255,255,.68); --faint:rgba(255,255,255,.44); --line:rgba(255,255,255,.12);
+  --accent:#F2C14E; --accent-ink:#2A1D03; --base:#06180E;
+  --frost:color-mix(in srgb,var(--base) 46%,transparent);
+  --display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --body:"Instrument Sans","Avenir Next","Helvetica Neue",sans-serif;
+  --label:var(--body);
+  --spring:linear(0,.18 5%,.62 12%,1.02 22%,1.13 29%,1.07 38%,.985 52%,.995 68%,1);
+  --ct:.7s ease; /* how fast the accent colour changes */
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;background:var(--base);overflow-x:hidden;transition:background-color 1.2s ease}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+img{max-width:100%}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+
+/* background: darker at the top, brighter at the bottom, like the app */
+.bg{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.mesh{position:absolute;inset:-10%;
+  background:
+    radial-gradient(60% 55% at 14% 92%,color-mix(in srgb,var(--a-c1) 46%,transparent) 0%,transparent 60%),
+    radial-gradient(55% 50% at 86% 88%,color-mix(in srgb,var(--a-c2) 32%,transparent) 0%,transparent 60%),
+    radial-gradient(40% 40% at 60% 70%,color-mix(in srgb,var(--a-c3) 32%,transparent) 0%,transparent 60%),
+    linear-gradient(180deg,var(--a-top) 0%,var(--a-mid) 42%,var(--a-bot) 100%);
+  transition:--a-top 1.2s ease,--a-mid 1.2s ease,--a-bot 1.2s ease,--a-c1 1.2s ease,--a-c2 1.2s ease,--a-c3 1.2s ease;
+  animation:drift 40s ease-in-out infinite alternate}
+.bg::after{content:"";position:absolute;inset:0;opacity:.12;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E")}
+@keyframes drift{from{transform:translate3d(-1.5%,0,0) scale(1.02)}to{transform:translate3d(1.5%,-1%,0) scale(1.06)}}
+
+/* frosted panels, and the liquid glass look behind the switch */
+.frost{background:var(--frost);background-image:linear-gradient(180deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 38%);
+  backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);
+  border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 14px 44px rgba(0,0,0,.3);
+  transition:background-color 1.2s ease,box-shadow .5s ease}
+body[data-look="glass"] .frost{background:rgba(255,255,255,.075);background-image:none;border-color:transparent;
+  backdrop-filter:saturate(1.8) brightness(1.05);-webkit-backdrop-filter:saturate(1.8) brightness(1.05);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.11),inset 1px 0 0 rgba(255,255,255,.11),inset -1px 0 0 rgba(255,255,255,.11),inset 0 0 26px rgba(255,255,255,.07),0 16px 54px rgba(0,0,0,.45)}
+/* the top bar keeps a little blur in glass, because the page scrolls under it */
+body[data-look="glass"] .top .in{backdrop-filter:blur(12px) saturate(1.8);-webkit-backdrop-filter:blur(12px) saturate(1.8)}
+.light{position:fixed;left:-260px;top:-260px;width:520px;height:520px;border-radius:50%;z-index:-1;pointer-events:none;opacity:0;
+  background:radial-gradient(closest-side,rgba(255,255,255,.16),transparent);will-change:transform;transition:opacity .5s}
+body[data-look="glass"] .light{opacity:1}
+
+.wrap{width:min(1140px,calc(100% - 32px));margin:0 auto}
+
+/* top bar */
+.top{position:sticky;top:12px;z-index:5;margin-top:12px}
+.top .in{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 14px;border-radius:999px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand svg{width:30px;height:30px;border-radius:8px;display:block}
+.brand b{font-family:var(--display);font-weight:400;font-size:27px;letter-spacing:-.01em;line-height:1}
+.top nav{display:flex;gap:2px;margin-left:auto}
+.top nav a{padding:8px 12px;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:700;font-size:14px;transition:color .2s,background .2s}
+.top nav a:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.btn{color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 22px;border-radius:999px;font-weight:800;font-size:15px;text-decoration:none;white-space:nowrap;
+  border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 8%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  transition:transform .55s var(--spring),box-shadow .25s,background-color var(--ct),color var(--ct)}
+.btn:hover{transform:translateY(-2px);background-color:color-mix(in srgb,var(--ink) 13%,transparent)}
+.btn:active{transform:scale(.94);transition-duration:.07s,.25s,.2s,.2s}
+.btn.primary{background-color:var(--accent);color:var(--accent-ink);border-color:transparent;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 60%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 8px 26px color-mix(in srgb,var(--accent) 34%,transparent)}
+.btn.primary:hover{background-color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 12px 34px color-mix(in srgb,var(--accent) 48%,transparent)}
+.btn.small{height:36px;padding:0 14px;font-size:13px}
+.top .btn{height:38px;padding:0 16px;font-size:14px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:44px;align-items:center;padding:64px 0 56px}
+.eyebrow{display:inline-block;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 42%,transparent);background:color-mix(in srgb,var(--accent) 9%,transparent);transition:color var(--ct),border-color var(--ct),background-color var(--ct)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(68px,10vw,136px);line-height:.9;letter-spacing:-.025em;margin:22px 0 20px}
+h1 span{display:block}
+h1 em{font-style:italic;color:var(--accent);transition:color var(--ct)}
+.lead{font-size:clamp(17px,1.7vw,19.5px);color:var(--muted);max-width:470px;margin:0 0 28px}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}
+.fine{font-size:13px;color:var(--faint);margin:16px 0 0}
+
+/* the demo: a small piece of Dial */
+.demo{border-radius:28px;padding:10px}
+.photo{position:relative;border-radius:19px;overflow:hidden;aspect-ratio:3/2;background:rgba(0,0,0,.25)}
+.photo img,.photo canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.photo .tag{position:absolute;left:12px;top:12px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--accent);color:var(--accent-ink);opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .4s var(--spring),background-color var(--ct)}
+.photo.before .tag{opacity:1;transform:none}
+.controls{display:grid;grid-template-columns:176px minmax(0,1fr);gap:18px;align-items:center;padding:16px 10px 8px}
+.dial{position:relative;width:176px;height:176px;touch-action:none;cursor:grab;border-radius:50%;user-select:none;-webkit-user-select:none}
+.dial:active{cursor:grabbing}
+.dial svg{display:block;width:100%;height:100%;overflow:visible}
+.dial .track{fill:none;stroke:color-mix(in srgb,var(--ink) 14%,transparent);stroke-width:9;stroke-linecap:round}
+.dial .arc{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;transition:stroke var(--ct)}
+.dial .tick{stroke:color-mix(in srgb,var(--ink) 26%,transparent);stroke-width:1.4;stroke-linecap:round}
+.dial .tick.big{stroke:color-mix(in srgb,var(--ink) 50%,transparent)}
+.dial .tick.zero{stroke:var(--accent);stroke-width:2.4;transition:stroke var(--ct)}
+.dial .knob{fill:var(--knob,#fff);stroke:var(--base);stroke-width:4;transition:r .4s var(--spring)}
+.dial:active .knob,.dial.drag .knob{r:11}
+.dial .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+.dial .num{font-family:var(--display);font-weight:400;font-size:40px;letter-spacing:-.02em;line-height:1}
+.dial .lbl{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.side{min-width:0}
+.seg{position:relative;display:inline-flex;gap:2px;padding:3px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.seg button{position:relative;z-index:1;padding:8px 14px;border-radius:999px;font-weight:800;font-size:13px;color:var(--muted);transition:color .25s}
+.seg button.on{color:var(--accent-ink)}
+.seg .pill{position:absolute;z-index:0;left:3px;top:3px;height:calc(100% - 6px);width:60px;border-radius:999px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0) 55%),var(--accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 14px color-mix(in srgb,var(--accent) 32%,transparent);transition:background-color var(--ct)}
+.hint{font-size:13.5px;color:var(--muted);margin:12px 0 12px}
+.hint b{color:var(--ink)}
+.picks{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pick{width:62px;height:42px;border-radius:11px;overflow:hidden;border:2px solid transparent;opacity:.7;transition:transform .5s var(--spring),opacity .2s,border-color .2s}
+.pick img{width:100%;height:100%;object-fit:cover;display:block}
+.pick:hover{opacity:1;transform:translateY(-2px)}
+.pick.on{opacity:1;border-color:var(--accent);transform:scale(1.06)}
+.picks .gap{flex:1}
+.acts{display:flex;gap:8px}
+#before{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.note{font-size:12px;color:var(--faint);padding:6px 10px 6px;margin:0}
+
+/* Paper: the one light colour */
+body[data-theme="paper"]{--ink:#10281A;--muted:rgba(16,40,26,.74);--faint:rgba(16,40,26,.56);--line:rgba(16,40,26,.14);--knob:#10281A}
+body[data-theme="paper"] .frost{background:rgba(255,255,255,.62);background-image:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 45%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 44px rgba(16,40,26,.14)}
+body[data-theme="paper"][data-look="glass"] .frost{background:rgba(255,255,255,.34);background-image:none;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(255,255,255,.5),0 14px 44px rgba(16,40,26,.16)}
+body[data-theme="paper"] .bg::after{opacity:.05}
+body[data-theme="paper"] .dial .knob{stroke:#fff}
+body[data-theme="paper"] .light{background:radial-gradient(closest-side,rgba(255,255,255,.7),transparent)}
+/* Moving background off: nothing drifts, slides or springs */
+body[data-motion="off"] .mesh{animation:none}
+body[data-motion="off"] .rv{opacity:1;transform:none;transition:none}
+body[data-motion="off"] .hero *{animation:none !important}
+body[data-motion="off"] .btn,body[data-motion="off"] .pick,body[data-motion="off"] .dots button{transition:background-color var(--ct),color var(--ct)}
+
+/* sections */
+section{padding:76px 0}
+h2{font-family:var(--display);font-weight:400;font-size:clamp(36px,5vw,60px);letter-spacing:-.015em;line-height:1.04;margin:0 0 12px}
+.sub{color:var(--muted);max-width:640px;margin:0 0 34px;font-size:17px}
+
+/* numbers */
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-radius:24px;overflow:hidden}
+.nums div{padding:24px 22px;border-left:1px solid var(--line)}
+.nums div:first-child{border-left:0}
+.nums b{display:block;font-family:var(--display);font-weight:400;font-size:clamp(38px,4.6vw,56px);letter-spacing:-.02em;line-height:1;color:var(--accent);transition:color var(--ct)}
+.nums span{display:block;color:var(--muted);font-size:14px;margin-top:8px}
+.foot{font-size:12.5px;color:var(--faint);margin:12px 4px 0}
+
+/* features: each one sits on a ruler, like Dial's sliders */
+.feats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.feat{border-radius:20px;padding:20px 20px 22px}
+.feat .n{font-family:var(--label);font-weight:700;font-size:12px;letter-spacing:.1em;color:var(--accent);transition:color var(--ct)}
+.feat .rule{height:9px;margin:10px 0 14px;opacity:.75;
+  background:
+    linear-gradient(var(--accent),var(--accent)) 0 0/2px 9px no-repeat,
+    repeating-linear-gradient(90deg,color-mix(in srgb,var(--ink) 34%,transparent) 0 1px,transparent 1px 9px) 0 0/100% 5px no-repeat}
+.feat h3{font-family:var(--display);font-size:23px;font-weight:400;letter-spacing:-.01em;line-height:1.12;margin:0 0 6px}
+.feat p{margin:0;color:var(--muted);font-size:14.5px}
+
+/* the whole editor */
+.screen{border-radius:26px;padding:10px}
+.screen img{display:block;width:100%;height:auto;border-radius:18px}
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;margin-top:22px}
+.legend b{display:block;font-family:var(--display);font-weight:400;font-size:20px;line-height:1.15;letter-spacing:-.01em;margin-bottom:4px}
+.legend span{color:var(--muted);font-size:14.5px}
+
+/* colours */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;align-items:center}
+.split .pic{border-radius:24px;padding:8px}
+.split img{width:100%;height:auto;border-radius:17px;display:block}
+.ticks{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px}
+.ticks li{display:flex;gap:10px;align-items:flex-start;color:var(--muted)}
+.ticks li::before{content:"";flex:0 0 7px;height:7px;margin-top:9px;border-radius:50%;background:var(--accent);transition:background-color var(--ct)}
+.ticks b{color:var(--ink)}
+.set{border-radius:26px;padding:8px 20px 12px}
+.set-head{padding:14px 0 12px;border-bottom:1px solid var(--line)}
+.set-head b{display:block;font-family:var(--display);font-weight:400;font-size:24px;line-height:1.1;letter-spacing:-.01em}
+.set-head span{display:block;color:var(--muted);font-size:13.5px;margin-top:3px}
+.opt{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
+.opt:last-child{border-bottom:0}
+.opt .l{flex:1;min-width:0;font-weight:800;font-size:14.5px}
+.opt .l small{display:block;color:var(--faint);font-weight:600;font-size:12.5px;margin-top:1px}
+.dots{display:grid;grid-template-columns:repeat(4,30px);gap:8px;flex:0 0 auto}
+.dots button{width:30px;height:30px;border-radius:50%;background:var(--dot);border:2px solid color-mix(in srgb,var(--ink) 30%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 8px rgba(0,0,0,.25);transition:transform .5s var(--spring),border-color .2s,box-shadow .2s}
+.dots button:hover{transform:scale(1.12)}
+.dots button.on{border-color:var(--ink);transform:scale(1.14);box-shadow:0 0 0 3px var(--accent),0 2px 10px rgba(0,0,0,.35)}
+.switch{flex:0 0 auto;position:relative;width:46px;height:28px;border-radius:999px;background:color-mix(in srgb,var(--ink) 20%,transparent);transition:background-color .25s}
+.switch::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:transform .5s var(--spring)}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+
+/* privacy */
+.privacy{border-radius:30px;padding:48px 28px;text-align:center}
+.privacy .sub{margin:0 auto 26px}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.chips span{padding:8px 14px;border-radius:999px;font-weight:800;font-size:13px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+
+.final{text-align:center;padding:96px 0 84px}
+.final h2{font-size:clamp(40px,6.4vw,80px);letter-spacing:-.05em;margin-bottom:22px}
+footer{padding:26px 0 40px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+footer .in{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+footer .in span:first-child{flex:1}
+
+/* things appear as you scroll */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .9s var(--spring)}
+.rv.in{opacity:1;transform:none}
+.hero h1 span,.hero .eyebrow,.hero .lead,.hero .ctas,.hero .fine,.hero .demo{animation:rise .9s var(--spring) both}
+.hero h1 span:nth-child(1){animation-delay:.06s}.hero h1 span:nth-child(2){animation-delay:.14s}
+.hero .lead{animation-delay:.22s}.hero .ctas{animation-delay:.3s}.hero .fine{animation-delay:.36s}.hero .demo{animation-delay:.18s}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  .mesh{animation:none}html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .hero h1 span,.hero .eyebrow,.hero .lead,.hero .ctas,.hero .fine,.hero .demo{animation:none}
+}
+@media (max-width:980px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:30px;padding:44px 0 40px}
+  .lead{max-width:560px}
+  .feats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums div:nth-child(3){border-left:0}
+  .nums div:nth-child(n+3){border-top:1px solid var(--line)}
+  .split{grid-template-columns:minmax(0,1fr)}
+  .split .txt{order:-1}
+  section{padding:54px 0}
+}
+@media (max-width:620px){
+  .top nav{display:none}
+  .top .btn{margin-left:auto}
+  .controls{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:10px}
+  .side{width:100%}
+  .picks{justify-content:center}
+  .picks .gap{display:none}
+  .acts{flex:0 0 100%;justify-content:center;margin-top:4px}
+  .feats{grid-template-columns:minmax(0,1fr)}
+  .legend{grid-template-columns:minmax(0,1fr);gap:14px}
+  .dots{grid-template-columns:repeat(4,34px)}
+  .dots button{width:34px;height:34px}
+  .seg button{padding:10px 15px}
+  .btn.small{height:40px}
+}
+/* ============================================================
+   Camera: the same style as the editor (since 18 Nov 2026). Thin lines, square corners, small capitals,
+   viewfinder marks round the pictures, a square marker in the lists. Scoped to body[data-style="camera"];
+   "Old look" in the Settings card (shared with the app) takes it off. With Liquid glass it is square lens
+   glass with a coated edge, like in the app.
+   ============================================================ */
+body[data-style="camera"] .top .in{border-radius:4px}
+body[data-style="camera"] .top nav a{border-radius:2px;text-transform:uppercase;letter-spacing:.14em;font-weight:600;font-size:11.5px;padding:8px 10px}
+body[data-style="camera"] .top nav a:hover{background:none;color:var(--accent);box-shadow:inset 0 -1.5px 0 var(--accent)}
+body[data-style="camera"] .btn{border-radius:2px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;font-size:12.5px}
+body[data-style="camera"] .top .btn{font-size:11.5px}
+body[data-style="camera"] .btn.small{font-size:11px}
+body[data-style="camera"]:not([data-look="glass"]) .btn{background-color:transparent;box-shadow:none;border-color:color-mix(in srgb,var(--ink) 28%,transparent)}
+body[data-style="camera"]:not([data-look="glass"]) .btn:hover{background-color:color-mix(in srgb,var(--ink) 8%,transparent)}
+body[data-style="camera"]:not([data-look="glass"]) .btn.primary{background-color:var(--accent);background-image:none;border-color:var(--accent);box-shadow:none}
+body[data-style="camera"] .eyebrow{border-radius:2px;letter-spacing:.16em;font-weight:600}
+body[data-style="camera"]:not([data-look="glass"]) .frost{background-image:none;border-color:color-mix(in srgb,var(--ink) 20%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 40px rgba(0,0,0,.28)}
+body[data-style="camera"][data-theme="paper"]:not([data-look="glass"]) .frost{box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 12px 34px rgba(16,40,26,.12)}
+body[data-style="camera"] :is(.demo,.nums,.feat,.screen,.split .pic,.set,.privacy){border-radius:4px}
+/* the pictures: square, with viewfinder marks in the corners */
+body[data-style="camera"] :is(.photo,.screen img,.split img){border-radius:0}
+body[data-style="camera"] .photo::after{content:"";position:absolute;inset:10px;pointer-events:none;z-index:1;--vf:rgba(255,255,255,.75);
+  background:
+    linear-gradient(var(--vf),var(--vf)) 0 0/18px 1.5px,linear-gradient(var(--vf),var(--vf)) 0 0/1.5px 18px,
+    linear-gradient(var(--vf),var(--vf)) 100% 0/18px 1.5px,linear-gradient(var(--vf),var(--vf)) 100% 0/1.5px 18px,
+    linear-gradient(var(--vf),var(--vf)) 0 100%/18px 1.5px,linear-gradient(var(--vf),var(--vf)) 0 100%/1.5px 18px,
+    linear-gradient(var(--vf),var(--vf)) 100% 100%/18px 1.5px,linear-gradient(var(--vf),var(--vf)) 100% 100%/1.5px 18px;
+  background-repeat:no-repeat}
+body[data-style="camera"] .photo .tag{border-radius:2px;left:16px;top:16px}
+/* the little dial: a thin ring, the knob a needle; the switcher square */
+body[data-style="camera"] .dial .track,body[data-style="camera"] .dial .arc{stroke-width:3;stroke-linecap:butt}
+body[data-style="camera"] .dial .lbl{font-weight:600;letter-spacing:.2em}
+body[data-style="camera"] .seg{border-radius:3px}
+body[data-style="camera"] .seg button{border-radius:2px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;font-size:11.5px}
+body[data-style="camera"] .seg .pill{border-radius:2px}
+body[data-style="camera"]:not([data-look="glass"]) .seg{background:transparent;border-color:color-mix(in srgb,var(--ink) 24%,transparent)}
+body[data-style="camera"]:not([data-look="glass"]) .seg .pill{background:var(--accent);box-shadow:none}
+body[data-style="camera"] .pick{border-radius:0;border-width:1.5px}
+/* numbers, features, the settings card */
+body[data-style="camera"] .nums b{font-style:italic}
+body[data-style="camera"] .nums span{text-transform:uppercase;letter-spacing:.1em;font-size:11.5px;font-weight:600}
+body[data-style="camera"] .feat .n{letter-spacing:.2em}
+body[data-style="camera"] .feat h3{font-style:italic}
+body[data-style="camera"] .legend b{font-style:italic}
+body[data-style="camera"] .set-head b{font-style:italic}
+body[data-style="camera"] .opt .l{font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:12px}
+body[data-style="camera"] .opt .l small{text-transform:none;letter-spacing:0;font-size:12.5px}
+body[data-style="camera"] .switch{border-radius:3px}
+body[data-style="camera"] .switch::after{border-radius:2px}
+body[data-style="camera"] .ticks li::before{border-radius:0;width:7px}
+body[data-style="camera"] .chips span{border-radius:2px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;font-size:11.5px}
+body[data-style="camera"] footer{text-transform:uppercase;letter-spacing:.1em;font-size:11.5px}
+/* Camera glass: square lens glass with a coated edge */
+body[data-style="camera"][data-look="glass"]{--coat:linear-gradient(90deg,rgba(150,110,255,0),rgba(150,110,255,.55) 22%,rgba(80,230,170,.5) 50%,rgba(255,190,90,.5) 78%,rgba(255,190,90,0))}
+body[data-style="camera"][data-look="glass"] .frost{background:var(--coat) 0 0/100% 1.5px no-repeat,rgba(255,255,255,.075)}
+body[data-style="camera"][data-theme="paper"][data-look="glass"] .frost{background:var(--coat) 0 0/100% 1.5px no-repeat,rgba(255,255,255,.34)}
+body[data-style="camera"][data-look="glass"] .btn.primary{background-image:var(--coat);background-size:100% 1.5px;background-repeat:no-repeat}
+@media (max-width:620px){body[data-style="camera"] .btn{letter-spacing:.08em}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><div class="mesh" id="mesh"></div></div>
+<div class="light" id="light" aria-hidden="true"></div>
+
+<header class="top wrap">
+  <div class="in frost">
+    <a class="brand" href="#top" aria-label="Dial">
+      <svg viewBox="0 0 240 240" aria-hidden="true"><rect width="240" height="240" rx="54" fill="#07180E"/><circle cx="120" cy="120" r="66" fill="none" stroke="#fff" stroke-width="16"/><circle id="logoArc" cx="120" cy="120" r="66" fill="none" stroke="#F2C14E" stroke-width="16" stroke-linecap="round" stroke-dasharray="249 415" transform="rotate(-90 120 120)" style="transition:stroke .7s ease"/></svg>
+      <b>Dial</b>
+    </a>
+    <nav><a href="#try">Try it</a><a href="#features">Features</a><a href="#colours">Colours</a><a href="#privacy">Privacy</a></nav>
+    <a class="btn primary" href="app.html">Open Dial</a>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero wrap">
+    <div>
+      <span class="eyebrow">Free photo editor · runs in your browser</span>
+      <h1><span>Dial</span><span>it <em>in.</em></span></h1>
+      <p class="lead">Dial is a photo editor that starts with one preset and a few sliders, and goes as deep as you want. Your photos never leave your computer.</p>
+      <div class="ctas"><a class="btn primary" href="app.html">Open Dial</a><a class="btn" href="#features">See what it does</a></div>
+      <p class="fine">No account. No upload. Works on a computer, a tablet and a phone.</p>
+    </div>
+
+    <div class="demo frost" id="try">
+      <div class="photo" id="photo">
+        <img id="src" src="landing/demo-valley.jpg" width="1440" height="960" alt="A drawn landscape: green hills under a pale sun">
+        <canvas id="cv" width="720" height="480" aria-hidden="true"></canvas>
+        <span class="tag">Before</span>
+      </div>
+      <div class="controls">
+        <div class="dial" id="dial" role="slider" tabindex="0" aria-label="Light" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
+          <svg viewBox="0 0 200 200" aria-hidden="true"><g id="ticks"></g><path class="track" id="track"/><path class="arc" id="arc"/><circle class="knob" id="knob" r="8.5" cx="100" cy="26"/></svg>
+          <div class="mid"><div class="num" id="num">0</div><div class="lbl" id="lbl">Light</div></div>
+        </div>
+        <div class="side">
+          <div class="seg" id="seg" role="group" aria-label="What the dial changes">
+            <span class="pill" id="pill"></span>
+            <button data-k="light" class="on">Light</button><button data-k="warm">Warmth</button><button data-k="colour">Colour</button>
+          </div>
+          <p class="hint"><b>Try it:</b> drag the dial around. Double-click it to go back to 0.</p>
+          <div class="picks">
+            <button class="pick on" data-src="landing/demo-valley.jpg" aria-label="Green hills"><img src="landing/demo-valley.jpg" alt="" loading="lazy"></button>
+            <button class="pick" data-src="landing/demo-sunset.jpg" aria-label="Evening sky"><img src="landing/demo-sunset.jpg" alt="" loading="lazy"></button>
+            <button class="pick" data-src="landing/demo-dusk.jpg" aria-label="Blue dusk"><img src="landing/demo-dusk.jpg" alt="" loading="lazy"></button>
+            <span class="gap"></span>
+            <span class="acts"><button class="btn small" id="before" title="Hold to see the picture before your changes">Before</button><button class="btn small" id="reset">Reset</button></span>
+          </div>
+        </div>
+      </div>
+      <p class="note">This is one small piece of Dial. Pick another picture and watch the page change colour with it. The pictures are drawings made for this page.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="nums frost rv">
+      <div><b>93</b><span>sliders when you switch to Expert</span></div>
+      <div><b>60 fps</b><span>while you drag, on a 24-megapixel photo</span></div>
+      <div><b>3</b><span>ways to save: JPEG, PNG and WebP</span></div>
+      <div><b>0</b><span>photos uploaded. Ever.</span></div>
+    </div>
+    <p class="foot">Speed measured on a MacBook with 8 GB of memory. A slower computer will be slower.</p>
+  </div>
+
+  <section id="features" class="wrap">
+    <h2 class="rv">Start simple. Go as deep as you like.</h2>
+    <p class="sub rv">Simple mode shows about ten sliders. Normal shows the ones most people use. Expert shows everything a pro editor has.</p>
+    <div class="feats">
+      <div class="feat frost rv"><div class="n">01</div><div class="rule"></div><h3>Presets</h3><p>Punch, Golden, film looks and black and white. Turn the amount up or down, or save your own.</p></div>
+      <div class="feat frost rv"><div class="n">02</div><div class="rule"></div><h3>Tone curve</h3><p>Light and dark exactly where you want them, for all colours or for red, green and blue alone.</p></div>
+      <div class="feat frost rv"><div class="n">03</div><div class="rule"></div><h3>Colour mixer and grading</h3><p>Change one colour at a time, and tint shadows, midtones and highlights separately.</p></div>
+      <div class="feat frost rv"><div class="n">04</div><div class="rule"></div><h3>Masks and healing</h3><p>Brush, gradient, radial, colour and brightness masks, and a heal tool for dust, spots and red eyes.</p></div>
+      <div class="feat frost rv"><div class="n">05</div><div class="rule"></div><h3>Lens blur</h3><p>Soft backgrounds with real-looking bokeh: blade shapes, rings, swirl and cat's eye.</p></div>
+      <div class="feat frost rv"><div class="n">06</div><div class="rule"></div><h3>Library</h3><p>Flags, stars and colour labels for many photos. Copy one edit onto a whole set.</p></div>
+      <div class="feat frost rv"><div class="n">07</div><div class="rule"></div><h3>Crop and straighten</h3><p>Shapes like 1:1, 4:5 and 3:2, a straighten tool, and guides to help you frame.</p></div>
+      <div class="feat frost rv"><div class="n">08</div><div class="rule"></div><h3>Export</h3><p>Resize, sharpen and add a watermark. Camera info is kept, your location is always left out.</p></div>
+    </div>
+  </section>
+
+  <section class="wrap" style="padding-top:20px">
+    <h2 class="rv">The whole editor on one screen.</h2>
+    <p class="sub rv">Shaped like the editors photographers already know, with fewer things in your way.</p>
+    <div class="screen frost rv"><img src="landing/develop.jpg" width="1440" height="900" loading="lazy" alt="Dial with a photo open: presets on the left, the photo in the middle, sliders on the right"></div>
+    <div class="legend rv">
+      <div><b>Left: looks</b><span>Presets, snapshots and the history of every step, so you can always go back.</span></div>
+      <div><b>Middle: your photo</b><span>Zoom, crop, compare before and after, and all your photos in a strip below.</span></div>
+      <div><b>Right: the sliders</b><span>Every slider has a small ruler with a notch at zero, so you see how far you went.</span></div>
+    </div>
+  </section>
+
+  <section id="colours" class="wrap">
+    <div class="split">
+      <div class="txt rv">
+        <h2>It takes on your photo's colours.</h2>
+        <p class="sub" style="margin-bottom:0">You saw it at the top of this page. Dial does the same with your photos: open an evening sky and it picks up the purples, open the sea and it turns blue. It follows along while you edit.</p>
+        <ul class="ticks">
+          <li><span><b>Or pick your own:</b> seven fixed backgrounds and seven accent colours. Try the dots.</span></li>
+          <li><span><b>Two styles:</b> Camera, with thin lines and square corners, or the round old look. And liquid glass for either one.</span></li>
+          <li><span><b>Dial mode:</b> one big round dial instead of sliders. Press Q in the app.</span></li>
+        </ul>
+      </div>
+      <div class="set frost rv" id="settings">
+        <div class="set-head"><b>Settings</b><span>These are Dial's real settings. What you pick here is how Dial opens.</span></div>
+        <div class="opt"><span class="l">Colours<small>The rainbow dot follows the picture.</small></span><div class="dots" data-set="theme" role="group" aria-label="Colours"></div></div>
+        <div class="opt"><span class="l">Accent<small>Buttons, the dial and the pill.</small></span><div class="dots" data-set="accent" role="group" aria-label="Accent"></div></div>
+        <div class="opt"><span class="l">Old look<small>The round frosted look from before. Off: Camera, the new one.</small></span><button class="switch" id="old" role="switch" aria-checked="false" aria-label="Old look"></button></div>
+        <div class="opt"><span class="l">Liquid glass<small>Clear panels with bright edges.</small></span><button class="switch" id="glass" role="switch" aria-checked="false" aria-label="Liquid glass"></button></div>
+        <div class="opt"><span class="l">Moving background<small>Off: nothing drifts, slides or springs.</small></span><button class="switch" id="motion" role="switch" aria-checked="true" aria-label="Moving background"></button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="wrap" style="padding-top:20px">
+    <div class="privacy frost rv">
+      <h2>Your photos stay on your computer.</h2>
+      <p class="sub">Dial runs only in your browser. Photos are never uploaded and there is no account. Even the fonts are part of Dial, so opening it doesn't ask another company for anything.</p>
+      <div class="chips"><span>No upload</span><span>No account</span><span>No tracking</span><span>No ads</span><span>Free</span></div>
+    </div>
+  </section>
+
+  <div class="final wrap rv">
+    <h2>Dial it in.</h2>
+    <a class="btn primary" href="app.html">Open Dial</a>
+    <p class="fine">Drop a photo in. That's it.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap in"><span>Dial is made in Berlin by Peter Stam.</span><a href="https://worlds.peterstam.eu">More things I made</a></div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var reduced = function () { return matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.getAttribute('data-motion') === 'off'; };
+
+  /* ---------- things appear as you scroll ---------- */
+  var rv = document.querySelectorAll('.rv');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (list) { list.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
+    rv.forEach(function (e) { io.observe(e); });
+  } else rv.forEach(function (e) { e.classList.add('in'); });
+
+  /* ---------- the picture: real pixel maths on a small copy ---------- */
+  var img = $('src'), cv = $('cv'), ctx = cv.getContext('2d', { willReadFrequently: true }), W = cv.width, H = cv.height;
+  var orig = null, out = null, vals = { light: 0, warm: 0, colour: 0 }, active = 'light', showBefore = false, raf = 0;
+  var NAMES = { light: 'Light', warm: 'Warmth', colour: 'Colour' };
+  function grab() {
+    try { ctx.drawImage(img, 0, 0, W, H); orig = ctx.getImageData(0, 0, W, H); out = ctx.createImageData(W, H); } catch (e) { orig = null; }
+    paint(); applyLook();
+  }
+  function paint() {
+    raf = 0; if (!orig) return;
+    if (showBefore || (!vals.light && !vals.warm && !vals.colour)) { ctx.putImageData(orig, 0, 0); return; }
+    var s = orig.data, d = out.data, gain = Math.pow(2, vals.light / 100 * 1.15), w = vals.warm / 100, sat = 1 + vals.colour / 100 * .95;
+    var gr = gain * (1 + w * .2), gg = gain * (1 + w * .03), gb = gain * (1 - w * .22);
+    for (var i = 0; i < s.length; i += 4) {
+      var r = s[i] * gr, g = s[i + 1] * gg, b = s[i + 2] * gb, l = .2126 * r + .7152 * g + .0722 * b;
+      r = l + (r - l) * sat; g = l + (g - l) * sat; b = l + (b - l) * sat;
+      d[i] = r < 0 ? 0 : r > 255 ? 255 : r; d[i + 1] = g < 0 ? 0 : g > 255 ? 255 : g; d[i + 2] = b < 0 ? 0 : b > 255 ? 255 : b; d[i + 3] = 255;
+    }
+    ctx.putImageData(out, 0, 0);
+  }
+  function ask() { if (!raf) raf = requestAnimationFrame(paint); }
+
+  /* ---------- the settings: the same ones the app keeps (dial.settings), so the app opens the way you left this page ---------- */
+  var S = { theme: 'photo', accent: 'auto', glass: false, motion: true, style: 'camera' };
+  function readSettings() { try { var o = JSON.parse(localStorage.getItem('dial.settings')); if (o && typeof o === 'object') { if (THEMES[o.theme]) S.theme = o.theme; if (o.accent === 'auto' || ACCENTS[o.accent]) S.accent = o.accent; S.glass = !!o.glass; S.motion = o.motion !== false; S.style = o.style === 'old' ? 'old' : 'camera'; } } catch (e) {} }
+  function writeSettings() { try { var o = JSON.parse(localStorage.getItem('dial.settings')) || {}; o.theme = S.theme; o.accent = S.accent; o.glass = S.glass; o.motion = S.motion; o.style = S.style; o.adaptV = 1; delete o.look; localStorage.setItem('dial.settings', JSON.stringify(o)); } catch (e) {} }
+  // background colours: top, middle, bottom, three colour clouds, the glass tint (the same numbers as the app)
+  var THEMES = {
+    photo:    { name: 'Photo: follows the picture', dot: 'conic-gradient(from 200deg,#F2C14E,#FF8A5B,#D946EF,#38BDF8,#4ADE80,#F2C14E)' },
+    mesh:     { name: 'Forest',   dot: 'linear-gradient(160deg,#08261A,#135B34)', c: ['#030E07', '#08261A', '#135B34', '#4ADE80', '#EAB308', '#22C55E', '#06180E'] },
+    ocean:    { name: 'Ocean',    dot: 'linear-gradient(160deg,#082544,#0F4C8A)', c: ['#030A14', '#082544', '#0F4C8A', '#38BDF8', '#6366F1', '#0EA5E9', '#07142A'] },
+    plum:     { name: 'Plum',     dot: 'linear-gradient(160deg,#2A0F3D,#6B2F8F)', c: ['#0D0414', '#2A0F3D', '#5B2A7A', '#D946EF', '#F472B6', '#8B5CF6', '#14081E'] },
+    ember:    { name: 'Ember',    dot: 'linear-gradient(160deg,#3A1208,#9A3A16)', c: ['#120503', '#3A1208', '#8A3516', '#FB923C', '#EF4444', '#F59E0B', '#1C0B07'] },
+    graphite: { name: 'Graphite', dot: 'linear-gradient(160deg,#151718,#3A3F43)', c: ['#060606', '#151718', '#2A2E31', '#94A3B8', '#64748B', '#8A93A0', '#101112'] },
+    midnight: { name: 'Midnight', dot: 'linear-gradient(160deg,#060B08,#13261A)', c: ['#060B08', '#0A120D', '#13261A', '#13261A', '#13261A', '#13261A', '#0B130E'] },
+    paper:    { name: 'Paper',    dot: 'linear-gradient(160deg,#FFFFFF,#DCE9DD)', c: ['#E5F0E6', '#F1F7F2', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'] }
+  };
+  // accent: colour, what is written on it, and the darker pair for Paper
+  var ACCENTS = {
+    gold: ['Gold', '#F2C14E', '#2A1D03', '#92660B'], coral: ['Coral', '#FF8A5B', '#2B0E05', '#C2410C'], pink: ['Pink', '#F9A8D4', '#3B0A24', '#BE185D'],
+    violet: ['Violet', '#C4B5FD', '#1E1346', '#6D28D9'], cyan: ['Sky', '#67E8F9', '#0B2A33', '#0369A1'], mint: ['Mint', '#5EEAD4', '#06302B', '#0F766E'], green: ['Lime', '#A3E635', '#1A2E05', '#4D7C0F']
+  };
+
+  /* ---------- the picture's main colours (the same idea as in the app) ---------- */
+  var tiny = document.createElement('canvas'); tiny.width = 32; tiny.height = 22;
+  var tctx = tiny.getContext('2d', { willReadFrequently: true });
+  function hsl(h, s, l) { return 'hsl(' + Math.round(((h % 360) + 360) % 360) + ' ' + Math.round(s * 100) + '% ' + Math.round(l * 100) + '%)'; }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function hd(a, b) { var d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+  function palette() {
+    if (!orig) return null;
+    var d; try { tctx.drawImage(cv, 0, 0, 32, 22); d = tctx.getImageData(0, 0, 32, 22).data; } catch (e) { return null; }
+    var N = 24, area = [], vivid = [], sat = [], cnt = [], tot = 0, satSum = 0, n = 0, i;
+    for (i = 0; i < N; i++) { area[i] = vivid[i] = sat[i] = cnt[i] = 0; }
+    for (i = 0; i < d.length; i += 4) {
+      var r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, df = mx - mn, h = 0, s = 0;
+      if (df > 1e-6) { s = df / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / df) % 6 : mx === g ? (b - r) / df + 2 : (r - g) / df + 4; h *= 60; if (h < 0) h += 360; }
+      n++; satSum += s; if (l < .06 || l > .96) continue;
+      var k = Math.floor(h / 15) % N, wt = s * (1 - Math.abs(2 * l - 1) * .5);
+      area[k] += wt; vivid[k] += wt * s; sat[k] += s * wt; cnt[k] += wt; tot += wt;
+    }
+    if (!n || tot < n * .035 || satSum / n < .07) return { gray: true };
+    var sm = function (a) { return a.map(function (v, j) { return v + .5 * (a[(j + N - 1) % N] + a[(j + 1) % N]); }); }, A = sm(area), V = sm(vivid), b1 = 0, b2 = -1, bv = 0;
+    for (i = 1; i < N; i++) { if (A[i] > A[b1]) b1 = i; if (V[i] > V[bv]) bv = i; }
+    var h1 = (b1 + .5) * 15;
+    for (i = 0; i < N; i++) { if (hd((i + .5) * 15, h1) < 45) continue; if (b2 < 0 || A[i] > A[b2]) b2 = i; }
+    return { h1: h1, h2: b2 >= 0 && A[b2] > A[b1] * .18 ? (b2 + .5) * 15 : h1 + 40, hv: (bv + .5) * 15,
+      S1: clamp(cnt[b1] ? sat[b1] / cnt[b1] : .5, .52, .88), Sv: clamp(cnt[bv] ? sat[bv] / cnt[bv] : .7, .62, .95) };
+  }
+  /* ---------- put the look on the page: background, accent, glass, motion ---------- */
+  function applyLook() {
+    var b = document.body, st = document.documentElement.style, ms = $('mesh').style, paper = S.theme === 'paper', p = palette(), c, accent, ink;
+    b.setAttribute('data-theme', S.theme);
+    if (S.glass) b.setAttribute('data-look', 'glass'); else b.removeAttribute('data-look');
+    b.setAttribute('data-style', S.style);
+    if (S.motion) b.removeAttribute('data-motion'); else b.setAttribute('data-motion', 'off');
+    if (S.theme !== 'photo') c = THEMES[S.theme].c;
+    else if (!p) c = THEMES.mesh.c;                             // no picture yet: the forest it starts with
+    else if (p.gray) c = ['#060707', '#151718', '#2A2E31', '#94A3B8', '#64748B', '#8A93A0', '#0E0F10'];
+    else c = [hsl(p.h1, p.S1 * .75, .04), hsl(p.h1, p.S1 * .7, .12), hsl(p.h1, p.S1 * .72, .27), hsl(p.h1, clamp(p.S1 + .1, .5, .9), .55), hsl(p.h2, clamp(p.S1 + .05, .5, .9), .55),
+      hsl((p.h1 + p.h2) / 2 + (hd(p.h1, p.h2) > 180 ? 180 : 0), .6, .5), hsl(p.h1, p.S1 * .75, .05)];
+    ['--a-top', '--a-mid', '--a-bot', '--a-c1', '--a-c2', '--a-c3'].forEach(function (v, i) { ms.setProperty(v, c[i]); });
+    st.setProperty('--base', c[6]);
+    if (S.accent !== 'auto') { accent = ACCENTS[S.accent][paper ? 3 : 1]; ink = paper ? '#FFFFFF' : ACCENTS[S.accent][2]; }
+    else if (!p || p.gray) { accent = paper ? '#92660B' : '#F2C14E'; ink = paper ? '#FFFFFF' : '#2A1D03'; }
+    else { accent = hsl(p.hv, p.Sv, paper ? .36 : .68); ink = paper ? '#FFFFFF' : hsl(p.hv, .6, .08); }
+    st.setProperty('--accent', accent); st.setProperty('--accent-ink', ink);
+    $('logoArc').style.stroke = accent;
+    document.querySelectorAll('.dots').forEach(function (box) { box.querySelectorAll('button').forEach(function (x) { var on = x.dataset.v === S[box.dataset.set]; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); }); });
+    $('glass').setAttribute('aria-checked', String(S.glass)); $('old').setAttribute('aria-checked', String(S.style === 'old')); $('motion').setAttribute('aria-checked', String(S.motion));
+  }
+
+  /* ---------- the dial ---------- */
+  var dial = $('dial'), arc = $('arc'), knob = $('knob'), num = $('num'), lbl = $('lbl'), R = 74, SWEEP = 135;
+  function pt(v, r) { var a = v / 100 * SWEEP * Math.PI / 180; return [100 + r * Math.sin(a), 100 - r * Math.cos(a)]; }
+  (function build() {
+    var NS = 'http://www.w3.org/2000/svg', g = $('ticks');
+    for (var v = -100; v <= 100; v += 5) {
+      var big = v % 50 === 0, a = pt(v, 85), b = pt(v, v === 0 ? 97 : big ? 94 : 90), ln = document.createElementNS(NS, 'line');
+      ln.setAttribute('x1', a[0].toFixed(2)); ln.setAttribute('y1', a[1].toFixed(2)); ln.setAttribute('x2', b[0].toFixed(2)); ln.setAttribute('y2', b[1].toFixed(2));
+      ln.setAttribute('class', 'tick' + (v === 0 ? ' zero' : big ? ' big' : '')); g.appendChild(ln);
+    }
+    var s = pt(-100, R), e = pt(100, R);
+    $('track').setAttribute('d', 'M' + s[0].toFixed(2) + ' ' + s[1].toFixed(2) + 'A' + R + ' ' + R + ' 0 1 1 ' + e[0].toFixed(2) + ' ' + e[1].toFixed(2));
+  })();
+  function show() {
+    var v = vals[active], p = pt(v, R);
+    knob.setAttribute('cx', p[0].toFixed(2)); knob.setAttribute('cy', p[1].toFixed(2));
+    arc.setAttribute('d', v ? 'M100 ' + (100 - R) + 'A' + R + ' ' + R + ' 0 0 ' + (v > 0 ? 1 : 0) + ' ' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) : '');
+    num.textContent = (v > 0 ? '+' : '') + v; lbl.textContent = NAMES[active];
+    dial.setAttribute('aria-valuenow', v); dial.setAttribute('aria-label', NAMES[active]);
+  }
+  function set(v) { v = Math.round(clamp(v, -100, 100)); if (v === vals[active]) return; vals[active] = v; show(); ask(); }
+  var dragging = false, last = 0;
+  function fromPointer(e) {
+    var r = dial.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    if (Math.hypot(dx, dy) < 8) return;                        // the very middle has no direction
+    var a = Math.atan2(dx, -dy) * 180 / Math.PI;               // 0 at the top, clockwise
+    if (Math.abs(a - last) > 180) return;                      // don't jump across the gap at the bottom
+    last = a; set(clamp(a, -SWEEP, SWEEP) / SWEEP * 100);
+  }
+  dial.addEventListener('pointerdown', function (e) { dragging = true; dial.classList.add('drag'); last = vals[active] / 100 * SWEEP; try { dial.setPointerCapture(e.pointerId); } catch (x) {} fromPointer(e); });
+  dial.addEventListener('pointermove', function (e) { if (dragging) fromPointer(e); });
+  function drop() { if (!dragging) return; dragging = false; dial.classList.remove('drag'); if (raf) cancelAnimationFrame(raf); paint(); applyLook(); }
+  dial.addEventListener('pointerup', drop); dial.addEventListener('pointercancel', drop);
+  dial.addEventListener('dblclick', function () { set(0); if (raf) cancelAnimationFrame(raf); paint(); applyLook(); });
+  dial.addEventListener('keydown', function (e) {
+    var step = e.shiftKey ? 10 : 2, v = vals[active], k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowUp') v += step; else if (k === 'ArrowLeft' || k === 'ArrowDown') v -= step;
+    else if (k === 'Home') v = -100; else if (k === 'End') v = 100; else if (k === 'Backspace' || k === 'Delete' || k === '0') v = 0; else return;
+    e.preventDefault(); set(v); clearTimeout(dial._t); dial._t = setTimeout(applyLook, 250);
+  });
+
+  /* ---------- Light / Warmth / Colour: one pill, pulled from button to button ---------- */
+  var seg = $('seg'), pill = $('pill'), at = null, run = null;
+  function spring(u) { if (u <= 0) return 0; if (u >= 1) return 1; var z = .5, wd = Math.sqrt(1 - z * z), w = -Math.log(.004 * wd) / z; return 1 - Math.exp(-z * w * u) * (Math.cos(wd * w * u) + (z / wd) * Math.sin(wd * w * u)); }
+  function place(glide) {
+    var on = seg.querySelector('button.on'); if (!on || !seg.offsetWidth) return;
+    var to = { x: on.offsetLeft, w: on.offsetWidth }, H0 = on.offsetHeight, top = on.offsetTop;
+    pill.style.left = to.x + 'px'; pill.style.width = to.w + 'px'; pill.style.top = top + 'px'; pill.style.height = H0 + 'px';
+    if (run) { run.cancel(); run = null; }
+    if (glide && at && at.x !== to.x && pill.animate && !reduced()) {
+      var right = to.x > at.x, far = Math.abs(to.x - at.x), frames = [], NF = 30;
+      for (var i = 0; i <= NF; i++) {
+        var t = i / NF, lead = 1 - Math.pow(1 - Math.min(1, t / .44), 3), trail = spring((t - .16) / .84);
+        var x0 = at.x + (to.x - at.x) * (right ? trail : lead), x1 = at.x + at.w + (to.x + to.w - at.x - at.w) * (right ? lead : trail);
+        var long = Math.max(0, (x1 - x0) - (at.w + (to.w - at.w) * t)), k = .3 * Math.min(1, long / far) * H0 / 2;
+        frames.push({ left: x0.toFixed(2) + 'px', width: Math.max(4, x1 - x0).toFixed(2) + 'px', top: (top + k).toFixed(2) + 'px', height: (H0 - 2 * k).toFixed(2) + 'px' });
+      }
+      frames[NF] = { left: to.x + 'px', width: to.w + 'px', top: top + 'px', height: H0 + 'px' };
+      run = pill.animate(frames, { duration: Math.min(760, 460 + far * .45), easing: 'linear' }); run.onfinish = function () { run = null; };
+    }
+    at = to;
+  }
+  seg.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-k]'); if (!b || b.dataset.k === active) return;
+    seg.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    active = b.dataset.k; show(); place(true);
+  });
+  addEventListener('resize', function () { place(false); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { place(false); });
+
+  /* ---------- other pictures, Before, Reset ---------- */
+  document.querySelectorAll('.pick').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.classList.contains('on')) return;
+      document.querySelectorAll('.pick').forEach(function (x) { x.classList.toggle('on', x === b); });
+      img.alt = 'A drawn landscape: ' + b.getAttribute('aria-label').toLowerCase();
+      img.src = b.dataset.src;                                 // grab() runs when it has loaded
+    });
+  });
+  var before = $('before'), photo = $('photo');
+  function setBefore(on) { if (showBefore === on) return; showBefore = on; photo.classList.toggle('before', on); ask(); }
+  before.addEventListener('pointerdown', function () { setBefore(true); });
+  ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach(function (ev) { before.addEventListener(ev, function () { setBefore(false); }); });
+  before.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setBefore(true); } });
+  before.addEventListener('keyup', function () { setBefore(false); });
+  $('reset').addEventListener('click', function () { vals = { light: 0, warm: 0, colour: 0 }; show(); ask(); setTimeout(applyLook, 60); });
+
+  /* ---------- the settings card ---------- */
+  (function build() {
+    var mk = function (box, key, name, dot) { var x = document.createElement('button'); x.dataset.v = key; x.title = name; x.setAttribute('aria-label', name); x.style.setProperty('--dot', dot); box.appendChild(x); };
+    var tb = document.querySelector('.dots[data-set="theme"]'), ab = document.querySelector('.dots[data-set="accent"]'), k;
+    for (k in THEMES) mk(tb, k, THEMES[k].name, THEMES[k].dot);
+    mk(ab, 'auto', 'Auto: from the picture', THEMES.photo.dot);
+    for (k in ACCENTS) mk(ab, k, ACCENTS[k][0], ACCENTS[k][1]);
+  })();
+  document.querySelectorAll('.dots').forEach(function (box) {
+    box.addEventListener('click', function (e) { var x = e.target.closest('button[data-v]'); if (!x) return; S[box.dataset.set] = x.dataset.v; writeSettings(); applyLook(); });
+  });
+  $('glass').addEventListener('click', function () { S.glass = !S.glass; writeSettings(); applyLook(); });
+  $('old').addEventListener('click', function () { S.style = S.style === 'old' ? 'camera' : 'old'; writeSettings(); applyLook(); requestAnimationFrame(function () { if (typeof place === 'function') place(false); }); });
+  $('motion').addEventListener('click', function () { S.motion = !S.motion; writeSettings(); applyLook(); });
+  // the light that follows the pointer on liquid glass
+  var light = $('light'), lraf = 0, lx = 0, ly = 0;
+  addEventListener('pointermove', function (e) {
+    lx = e.clientX; ly = e.clientY;
+    if (!lraf && S.glass) lraf = requestAnimationFrame(function () { lraf = 0; light.style.transform = 'translate3d(' + lx + 'px,' + ly + 'px,0)'; });
+  }, { passive: true });
+  // changed in the app in another tab? follow it
+  addEventListener('storage', function (e) { if (e.key === 'dial.settings') { readSettings(); applyLook(); } });
+
+  /* ---------- start ---------- */
+  readSettings(); applyLook();
+  img.addEventListener('load', grab);
+  show(); place(false);
+  if (img.complete && img.naturalWidth) grab();
+})();
+</script>
+</body>
+</html>
