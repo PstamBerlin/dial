@@ -13,6 +13,11 @@
 <meta name="apple-mobile-web-app-title" content="Dial">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Crect width='240' height='240' rx='54' fill='%2307191A'/%3E%3Ccircle cx='120' cy='120' r='72' fill='none' stroke='%23fff' stroke-width='16'/%3E%3Ccircle cx='120' cy='120' r='72' fill='none' stroke='%23F2C14E' stroke-width='16' stroke-linecap='round' stroke-dasharray='271 452' transform='rotate(-90 120 120)'/%3E%3C/svg%3E">
+<script>
+// A phone gets the lean look: no frosted blur, no moving background, no grain. Those are what make a phone stutter.
+// (?lean=1 forces it on any device, ?lean=0 switches it off.)
+(function () { try { var q = new URLSearchParams(location.search).get('lean'), small = Math.min(screen.width, screen.height) <= 600 && matchMedia('(pointer: coarse)').matches; if (q === '1' || (q !== '0' && small)) document.documentElement.setAttribute('data-lean', ''); } catch (e) {} })();
+</script>
 <link rel="preload" href="fonts/InstrumentSans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/InstrumentSerif.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -783,6 +788,92 @@ body[data-style="camera"][data-look="glass"] .pillbg{border-radius:3px}
 body[data-style="camera"][data-look="glass"] .thumb,body[data-style="camera"][data-look="glass"] .cell{border-radius:2px}
 body[data-style="camera"][data-look="glass"] .stage::after{--vf:rgba(255,255,255,.75)}
 body[data-style="camera"][data-look="glass"] .toast{border-radius:4px}
+</style>
+<style id="phone-style">
+/* ---------- phones: lean (set by the little script at the top of the head) ---------- */
+html[data-lean] *,html[data-lean] *::before,html[data-lean] *::after{backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+html[data-lean] .bg .mesh{animation:none !important}
+html[data-lean] .bg .grain,html[data-lean] .bg .ambient{display:none}
+html[data-lean] .frost{box-shadow:none}
+html[data-lean] :is(.stage-tools,.info,.readout,.cropbar,.side.right,dialog,.menu,.toast){background:var(--frost-solid)}
+html[data-lean] .stage canvas.view{box-shadow:0 0 0 1px rgba(255,255,255,.1)}
+/* the chips that jump between groups of sliders: only in the turned layout (upright has the tool row at the bottom) */
+.gchips,.ptools{display:none}
+.tsep{flex:0 0 1px;align-self:stretch;margin:4px 2px;background:var(--line)}
+/* ---------- a phone held upright (html.pui): like a phone's own photo editor ---------- */
+html.pui body{background:#000}
+html.pui .bg{display:none}
+html.pui body header{flex-wrap:nowrap;min-height:60px;height:60px;flex:0 0 60px;padding:8px 12px;gap:8px;background:transparent;border:0;box-shadow:none}
+html.pui body header .brand,html.pui body header .file{display:none}
+html.pui body header .tabs{margin:0;padding:4px;gap:0;border-radius:999px;background:#1C1D1C;border:0}
+html.pui body header .tabs button{padding:0 14px;height:36px;min-height:0;border-radius:999px;font-size:12.5px;font-weight:700;letter-spacing:0;text-transform:none;color:#B9BBB8;background:transparent !important;box-shadow:none !important}
+html.pui body header .tabs button.on{background:#3A3C3A !important;color:#fff !important}
+html.pui body header .tabs button::after,html.pui body header .tabs button::before{display:none !important}
+html.pui body header .actions{flex-wrap:nowrap;gap:8px;margin-left:auto}
+html.pui body header .btn{width:44px;height:44px;min-width:44px;padding:0;justify-content:center;border-radius:50%;border:0;background:#1C1D1C;color:#fff;box-shadow:none}
+html.pui body header #btnExport{width:auto;padding:0 18px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:14px;letter-spacing:0;text-transform:none}
+html.pui body header #btnExport .t{display:inline}
+html.pui body header #btnExport svg{display:none}
+html.pui body header #btnExport:disabled{opacity:.45}
+html.pui body main{padding:0 0 calc(var(--sheet-space,62px) + 72px + env(safe-area-inset-bottom,0px));gap:0}
+html.pui body .stage{padding:4px 0 54px;border:0;border-radius:0;background:transparent;box-shadow:none}
+html.pui body .stage::before,html.pui body .stage::after{display:none !important}
+html.pui body .stage canvas.view{border-radius:0;box-shadow:none}
+html.pui body .stage-tools{left:0;right:0;bottom:4px;transform:none;max-width:none;gap:2px;padding:0 10px;border:0 !important;border-radius:0;background:transparent !important;box-shadow:none !important}
+html.pui body .stage-tools .btn{height:42px;min-width:42px;padding:0 10px;border:0 !important;border-radius:999px;background:transparent !important;color:#A9ABA8;font-size:12px;justify-content:center;box-shadow:none !important}
+html.pui body .stage-tools .btn.icon{width:42px;padding:0}
+html.pui body .stage-tools .btn svg{width:22px;height:22px}
+html.pui body .stage-tools .btn.on,html.pui body .stage-tools .btn[aria-pressed="true"]{color:var(--accent) !important}
+html.pui body .stage-tools .btn:disabled{opacity:.35}
+html.pui .tsep{display:none}
+html.pui body .filmstrip{display:none}
+html.pui body .side.right{left:0;right:0;bottom:calc(72px + env(safe-area-inset-bottom,0px));border:0;border-radius:0;background:#000;box-shadow:none}
+html.pui body .side.right .hist,html.pui .ptabs{display:none !important}
+html.pui .sheet-handle{padding:6px 0 2px}
+html.pui #rightSide > .side-head{padding:4px 12px 8px;border:0}
+html.pui #rightBody details.group{display:none;border:0}
+html.pui #rightBody details.group.pcur{display:block}
+html.pui #rightBody details.group.pcur > summary{pointer-events:none;padding-top:4px;padding-bottom:4px}
+html.pui #rightBody details.group.pcur > summary .chev{display:none}
+html.pui #rightBody details.group.pcur > summary button{pointer-events:auto}
+html.pui .ptools{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:7;height:calc(72px + env(safe-area-inset-bottom,0px));padding:0 6px env(safe-area-inset-bottom,0px);gap:2px;background:#000;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+html.pui .ptools::-webkit-scrollbar{display:none}
+html.pui .ptools button{flex:0 0 auto;min-width:74px;height:72px;padding:0 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#C9CBC8;font-family:var(--body);font-size:12.5px;font-weight:600;letter-spacing:0;white-space:nowrap}
+html.pui .ptools button.on{color:var(--accent)}
+html.pui .ptools button svg{width:26px;height:26px}
+html.pui body dialog{background:#101110}
+@media (max-width:380px){html.pui body header .tabs button{padding:0 10px;font-size:12px}html.pui body header .btn{width:40px;height:40px;min-width:40px}html.pui body header #btnExport{padding:0 14px}}
+/* ---------- a phone on its side: buttons in a rail on the left, the photo in the middle, the sliders on the right ---------- */
+html[data-layout=land]{--land-panel:clamp(250px,36vw,330px)}
+html[data-layout=land] body{flex-direction:row;overflow:hidden}
+html[data-layout=land] header{flex:0 0 auto;width:calc(54px + env(safe-area-inset-left,0px));height:100%;min-height:0;flex-direction:column;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:6px;
+  padding:8px 6px 8px calc(6px + env(safe-area-inset-left,0px));border:0;border-right:1px solid var(--line);overflow:hidden auto;scrollbar-width:none}
+html[data-layout=land] header::-webkit-scrollbar{display:none}
+html[data-layout=land] header .brand .name,html[data-layout=land] header .brand .ver,html[data-layout=land] header .file,html[data-layout=land] .btn .t,html[data-layout=land] .kbd{display:none}
+html[data-layout=land] header .actions{flex-direction:column;flex-wrap:nowrap;margin:0;gap:5px}
+html[data-layout=land] header .btn{width:40px;height:40px;min-width:40px;padding:0;justify-content:center}
+html[data-layout=land] header .tabs{position:fixed;top:6px;right:calc(6px + env(safe-area-inset-right,0px));width:var(--land-panel);margin:0;justify-content:center;z-index:7}
+html[data-layout=land] main{flex:1;min-width:0;flex-direction:row;gap:6px;padding:6px calc(6px + env(safe-area-inset-right,0px)) 6px 6px}
+html[data-layout=land] .stage{padding:8px;min-height:0}
+html[data-layout=land] .stage-tools{bottom:6px}
+html[data-layout=land] .filmstrip{display:none}
+html[data-layout=land] .side.right{position:static;flex:0 0 var(--land-panel);margin-top:42px;max-height:none;height:auto !important;border-radius:var(--radius);z-index:auto;display:flex}
+html[data-layout=land] .side.right .side-body{overflow:auto;-webkit-overflow-scrolling:touch}
+html[data-layout=land] .side.right .hist,html[data-layout=land] .sheet-handle{display:none !important}
+html[data-layout=land] .ptabs{display:block;padding:6px 10px;border-bottom:1px solid var(--line)}
+html[data-layout=land] #rightSide > .side-head{padding:6px 10px;gap:6px}
+html[data-layout=land] #rightSide > .side-head .seg button{padding:6px 7px;font-size:10.5px;letter-spacing:.06em}
+html[data-layout=land] #rightSide > .side-head .btn{padding:0 8px;font-size:10.5px;letter-spacing:.04em}
+html[data-layout=land] .ptabs .seg button{padding:8px 4px;font-size:10.5px;letter-spacing:.05em;white-space:nowrap}
+html[data-layout=land] #rightSide.looks .side-looks{display:flex;flex-direction:column;flex:1;min-height:0}
+html[data-layout=land] #rightSide.looks > .hist,html[data-layout=land] #rightSide.looks > .side-head,html[data-layout=land] #rightSide.looks > .side-body,html[data-layout=land] #rightSide.looks > .gchips{display:none}
+html[data-layout=land] .gchips{display:flex;gap:6px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;flex:0 0 auto;border-bottom:1px solid var(--line)}
+html[data-layout=land] .gchips button{flex:0 0 auto;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--frost-2);color:var(--ink);font-weight:700;font-size:12px;white-space:nowrap}
+html[data-layout=land] .cropbar{left:8px;right:8px;transform:none;flex-wrap:wrap;justify-content:center;gap:4px;padding:5px;max-width:none}
+html[data-layout=land] dialog{max-height:calc(100% - 12px)}
+html[data-layout=land] .empty{gap:6px;padding:10px}
+html[data-layout=land] .empty h1{font-size:34px}
+body[data-style="camera"] html[data-layout=land] .gchips button{border-radius:2px}
 </style>
 </head>
 <body data-theme="photo" data-grain="on" data-bg="mesh" data-accent="auto" data-motion="on">
@@ -3438,6 +3529,9 @@ const PRESET_GROUPS = {
     Original: {},
     Punch: { tone: { contrast: 24, whites: 14, blacks: -12 }, presence: { vibrance: 30, clarity: 12 }, detail: { amount: 30 } },
     Golden: { wb: { temp: 40 }, tone: { highlights: -18, shadows: 16 }, presence: { vibrance: 18 }, effects: { vignette: { amount: 22 } } },
+    Christmas: { wb: { temp: 36, tint: 6 }, tone: { contrast: 10, highlights: -14, shadows: 12, blacks: -6 }, presence: { vibrance: 22, clarity: 6 },
+      grading: { shadows: { hue: 18, sat: 18, lum: 0 }, midtones: { hue: 38, sat: 14, lum: 0 }, highlights: { hue: 44, sat: 36, lum: 0 }, global: { hue: 0, sat: 0, lum: 0 }, blending: 60, balance: 10 },
+      effects: { vignette: { amount: 30 }, fade: 8, grain: { amount: 8, size: 30 } } },   // candle light: golden highlights, warm shadows, a soft dark edge
     'Cool matte': { wb: { temp: -22 }, tone: { contrast: -8 }, presence: { saturation: -14 }, effects: { fade: 26, vignette: { amount: 18 } } },
     Faded: { tone: { contrast: -14 }, presence: { saturation: -20 }, wb: { temp: 10 }, effects: { fade: 42, grain: { amount: 12 } } },
   },
@@ -6028,7 +6122,7 @@ $('#rightBody').addEventListener('pointerup', e => {
 const rightSide = $('#rightSide'), sheetHandle = $('#sheetHandle'), mainEl = $('main');
 let sheetDrag = null, sheetStop = 'closed', sheetHadPhoto = false, foldMode = ''; // foldMode: '' (sheet / desktop), 'side' or 'tb', see applyLayout
 const isPhone = () => !foldMode && window.matchMedia('(max-width: 860px)').matches;
-const SHEET_STOPS = ['closed', 'half', 'full'], sheetHalf = () => Math.round(innerHeight * .45);
+const SHEET_STOPS = ['closed', 'half', 'full'], sheetHalf = () => Math.round(innerHeight * (document.documentElement.classList.contains('pui') ? .31 : .45));
 function sheetSet(stop) {
   if (typeof stop === 'boolean') stop = stop ? 'half' : 'closed';
   sheetStop = stop;
@@ -6098,11 +6192,13 @@ narrowMQ.addEventListener('change', placeLeft); placeLeft();
 /* ---------- foldables: half folded on a table = photo top, controls bottom (tb); a square open screen = side by side (side) ---------- */
 // decided from the Viewport Segments media features (a horizontal hinge), the Device Posture API, or the screen shape; Settings > Layout overrides both
 const foldMQ = { hinge: matchMedia('(vertical-viewport-segments: 2)'), book: matchMedia('(horizontal-viewport-segments: 2)'), folded: matchMedia('(device-posture: folded)'),
-  mid: matchMedia('(min-width: 640px) and (max-width: 860px)'), square: matchMedia('(min-aspect-ratio: 4/5) and (max-aspect-ratio: 27/20)') };
+  mid: matchMedia('(min-width: 640px) and (max-width: 860px)'), square: matchMedia('(min-aspect-ratio: 4/5) and (max-aspect-ratio: 27/20)'),
+  land: matchMedia('(orientation: landscape) and (max-height: 540px) and (pointer: coarse)') };   // a phone on its side
 function layoutWanted() {
   const s = settings.layout || 'auto';
   if (s === 'tb') return 'tb'; if (s === 'side') return foldMQ.mid.matches ? 'side' : ''; if (s === 'sheet') return '';
   if (foldMQ.hinge.matches || (foldMQ.folded.matches && !foldMQ.book.matches)) return 'tb';
+  if (foldMQ.land.matches) return 'land';
   return foldMQ.mid.matches && foldMQ.square.matches ? 'side' : '';
 }
 function applyLayout() {
@@ -6111,10 +6207,73 @@ function applyLayout() {
   (m === 'tb' ? mainEl : stage).append(dialwrap); // the frosted stage would trap a fixed dial (backdrop-filter), so on a table the dial lives in <main>
   if (m) { rightSide.classList.remove('closed', 'half'); rightSide.style.removeProperty('height'); mainEl.style.removeProperty('--sheet-space'); mainEl.classList.remove('sheet-up'); }
   else if (isPhone()) sheetSet(sheetStop);
-  placeLeft(); if (cur()) { fitAndRender(); if (state.cropping) layoutCrop(); }
+  placeLeft(); placeActions(); if (cur()) { fitAndRender(); if (state.cropping) layoutCrop(); }
 }
 for (const q of Object.values(foldMQ)) q.addEventListener('change', applyLayout);
 window.addEventListener('resize', applyLayout);
+
+/* ---------- phones, upright: the editor looks like a phone's own photo editor ----------
+   One header row with round buttons and a gold Export pill, the photo on black, Undo / Redo / Compare / Dial mode under the photo,
+   the sliders of ONE tool at a time, and a row of tools with icons along the bottom. <html class="pui"> switches it on. */
+const movedBtns = [$('#btnUndo'), $('#btnRedo'), $('#btnCompare'), $('#btnDial')], actionsEl = $('header .actions'), toolsEl = $('#stageTools'), toolSep = Object.assign(document.createElement('span'), { className: 'tsep' });
+const phoneTabs = Object.assign(document.createElement('nav'), { className: 'ptools', id: 'phoneTools' }); document.body.append(phoneTabs);
+const chipBar = Object.assign(document.createElement('div'), { className: 'gchips' }); $('#rightBody').before(chipBar);
+const TOOL_NAMES = { looks: 'Presets', crop: 'Crop', basic: 'Adjust', curve: 'Curve', mixer: 'Colour', grading: 'Grading', detail: 'Detail', effects: 'Effects', lens: 'Lens', retouch: 'Heal', bokeh: 'Blur', masks: 'Masks', calib: 'Calibrate' };
+const I = d => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const TOOL_ICONS = {
+  looks: I('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 10h4M3 14h4M17 10h4M17 14h4"/>'),
+  crop: I('<path d="M6 2v16h16M2 6h16v16"/>'),
+  basic: I('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'),
+  curve: I('<path d="M4 20V4M4 20h16"/><path d="M4 18c6 0 8-12 16-12"/>'),
+  mixer: I('<circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="15" r="5"/>'),
+  grading: I('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6"/>'),
+  detail: I('<path d="M12 3l9 16H3z"/><path d="M12 9v5"/>'),
+  effects: I('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>'),
+  lens: I('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>'),
+  retouch: I('<path d="M4 20l9-9M14 4l6 6-5 5-6-6z"/>'),
+  bokeh: I('<circle cx="12" cy="12" r="3"/><circle cx="5" cy="7" r="1.5"/><circle cx="19" cy="7" r="1.5"/><circle cx="5" cy="17" r="1.5"/><circle cx="19" cy="17" r="1.5"/>'),
+  masks: I('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="5" stroke-dasharray="2.5 2.5"/>'),
+  calib: I('<path d="M4 20l5-5M9 15l3-9 3 9M12 6V3"/><path d="M15 15l5 5"/>'),
+};
+let curTool = 'basic';
+const pui = () => document.documentElement.classList.contains('pui');
+function shownGroups() { return $$('details.group[data-g]', $('#rightBody')).filter(d => getComputedStyle(d).display !== 'none' || d.classList.contains('pcur') || pui()).filter(d => !d.hasAttribute('data-lvl') || +d.dataset.lvl <= ({ simple: 1, normal: 2, expert: 3 }[settings.mode] || 2)); }
+function pickTool(t, quiet) {
+  if (t === 'crop') { $('#btnCrop').click(); return; }
+  curTool = t; const body = $('#rightBody');
+  for (const d of $$('details.group[data-g]', body)) { const on = d.dataset.g === t; d.classList.toggle('pcur', on); if (on && pui()) d.open = true; }
+  setPanelTab(t === 'looks' ? 'looks' : 'adjust');
+  for (const b of $$('[data-tool]', phoneTabs)) b.classList.toggle('on', b.dataset.tool === t);
+  if (!quiet) { body.scrollTop = 0; if (isPhone() && sheetStop === 'closed' && cur()) sheetSet('half'); const b = $(`[data-tool="${t}"]`, phoneTabs); if (b) b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: noGlide() ? 'auto' : 'smooth' }); }
+}
+let toolsKey = '';
+function buildTools() {
+  const gs = shownGroups().map(d => d.dataset.g), key = gs.join(',') + '|' + pui(); if (key === toolsKey) return; toolsKey = key;
+  const list = ['looks', 'crop', ...gs];
+  phoneTabs.innerHTML = list.map(t => `<button type="button" data-tool="${t}">${TOOL_ICONS[t] || TOOL_ICONS.basic}<span>${TOOL_NAMES[t] || GROUP_NAMES[t] || t}</span></button>`).join('');
+  chipBar.innerHTML = gs.map(t => `<button type="button" data-chip="${t}">${TOOL_NAMES[t] === 'Adjust' ? 'Basic' : TOOL_NAMES[t] || GROUP_NAMES[t] || t}</button>`).join('');
+  if (curTool !== 'looks' && !gs.includes(curTool)) curTool = gs[0] || 'basic';
+  pickTool(curTool, true);
+}
+phoneTabs.addEventListener('click', e => { const b = e.target.closest('[data-tool]'); if (b) pickTool(b.dataset.tool); });
+chipBar.addEventListener('click', e => {      // the turned layout keeps the long list: a chip opens its group and scrolls to it
+  const b = e.target.closest('[data-chip]'); if (!b) return;
+  const body = $('#rightBody'), d = $(`details.group[data-g="${b.dataset.chip}"]`, body); if (!d) return; d.open = true;
+  requestAnimationFrame(() => body.scrollTo({ top: body.scrollTop + d.getBoundingClientRect().top - body.getBoundingClientRect().top - 4, behavior: noGlide() ? 'auto' : 'smooth' }));
+});
+function placeActions() {
+  const down = isPhone() && window.matchMedia('(max-width: 520px)').matches;
+  if (down !== pui()) {
+    document.documentElement.classList.toggle('pui', down);
+    if (down) toolsEl.prepend(...movedBtns, toolSep);
+    else { toolSep.remove(); for (const b of movedBtns) actionsEl.insertBefore(b, $('#btnSettings')); for (const d of $$('details.group.pcur')) d.classList.remove('pcur'); setPanelTab('adjust'); }
+    toolsKey = ''; buildTools();
+    if (isPhone()) sheetSet(sheetStop);
+  }
+}
+window.matchMedia('(max-width: 520px)').addEventListener('change', placeActions); window.matchMedia('(max-width: 860px)').addEventListener('change', placeActions);
+new MutationObserver(buildTools).observe($('#rightBody'), { childList: true }); $('#segMode').addEventListener('click', () => setTimeout(() => { toolsKey = ''; buildTools(); }, 0));
+buildTools(); placeActions();
 
 /* ---------- histogram drag: blacks | shadows | exposure | highlights | whites ---------- */
 let histDrag = null;
@@ -6263,7 +6422,7 @@ buildRight(); applySettings(); syncPanel();
       st.setProperty('--accent', hsl(hv, Sv, paper ? .36 : .68)); st.setProperty('--accent-ink', paper ? '#FFFFFF' : hsl(hv, .6, .08));
     }
   }
-  setInterval(() => { if (!document.hidden) apply(false); }, 500);
+  setInterval(() => { if (!document.hidden) apply(false); }, document.documentElement.hasAttribute('data-lean') ? 1500 : 500);
   new MutationObserver(() => apply(true)).observe(body, { attributes: true, attributeFilter: ['data-theme', 'data-accent'] });
   document.addEventListener('change', () => setTimeout(() => apply(false), 250), true);
   addEventListener('pointerdown', () => { down = true; }, true);
