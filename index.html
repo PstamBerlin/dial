@@ -236,6 +236,8 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(36px,5vw,60px);let
 .ontouch{display:none}
 @media (hover:none) and (pointer:coarse){.onmouse{display:none}.ontouch{display:inline-flex}}
 #installBtn[hidden]{display:none}
+.installhelp{margin:14px 0 0;padding:12px 14px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--ink) 7%,transparent);border-radius:4px;font-size:15px;line-height:1.5;color:var(--ink)}
+.installhelp[hidden]{display:none}
 .final{text-align:center;padding:96px 0 84px}
 .final h2{font-size:clamp(40px,6.4vw,80px);letter-spacing:-.05em;margin-bottom:22px}
 footer{padding:26px 0 40px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
@@ -486,7 +488,8 @@ body[data-style="camera"][data-look="glass"] .btn.primary{background-image:var(-
         <span class="eyebrow">Dial on your phone</span>
         <h2>Dial, on your home screen.</h2>
         <p class="sub">Install it straight from this page. It gets its own icon, opens full screen like an app, and works without the internet.</p>
-        <button class="btn primary" id="installBtn" type="button" hidden>Install Dial</button>
+        <button class="btn primary" id="installBtn" type="button">Install Dial</button>
+        <p class="installhelp" id="installHelp" hidden></p>
         <p class="fine" id="installNote">Free · nothing to download from a store · Android, iPhone and iPad</p>
       </div>
       <ol class="macsteps">
@@ -731,12 +734,23 @@ body[data-style="camera"][data-look="glass"] .btn.primary{background-image:var(-
 })();
 </script>
 <script>
-// The Install button: the browser tells us when Dial can be installed, and only then is the button shown.
+// The Install button is always there. If the browser offers to install Dial, a tap asks it to.
+// If it does not (some browsers never do, and a phone can take a while to notice Dial was removed), a tap says how to add it by hand.
 (function () {
-  var ask = null, btn = document.getElementById('installBtn'), note = document.getElementById('installNote');
-  addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ask = e; btn.hidden = false; });
-  btn.addEventListener('click', function () { if (!ask) return; ask.prompt(); ask.userChoice.then(function () { ask = null; btn.hidden = true; }); });
-  addEventListener('appinstalled', function () { btn.hidden = true; note.textContent = 'Dial is installed. Look for its icon on your home screen.'; });
+  var ask = null, btn = document.getElementById('installBtn'), note = document.getElementById('installNote'), help = document.getElementById('installHelp');
+  var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), android = /Android/.test(ua);
+  function how() {
+    if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) return 'You are using the installed Dial right now.';
+    if (ios) return 'On an iPhone or iPad: open this page in Safari, tap the Share button (the square with the arrow), then "Add to Home Screen".';
+    if (android) return 'Tap your browser\'s menu (the three dots or three lines), then "Add to Home screen" or "Install app". If Dial was only just removed, the phone may need a minute before it offers it again.';
+    return 'In Chrome or Edge: open the menu (three dots), then "Cast, save and share" or "Apps", then "Install Dial". On a phone, open this page there.';
+  }
+  addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ask = e; help.hidden = true; });
+  btn.addEventListener('click', function () {
+    if (ask) { var a = ask; ask = null; a.prompt(); if (a.userChoice) a.userChoice.then(function (c) { if (!c || c.outcome !== 'accepted') { help.textContent = how(); help.hidden = false; } }); return; }
+    help.textContent = how(); help.hidden = false;
+  });
+  addEventListener('appinstalled', function () { help.hidden = true; note.textContent = 'Dial is installed. Look for its icon on your home screen.'; });
 })();
 </script>
 <script>
