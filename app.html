@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dial</title>
 <meta name="description" content="Dial — a photo editor that's easy on top and deep underneath.">
+<meta name="theme-color" content="#07180E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dial">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Crect width='240' height='240' rx='54' fill='%2307191A'/%3E%3Ccircle cx='120' cy='120' r='72' fill='none' stroke='%23fff' stroke-width='16'/%3E%3Ccircle cx='120' cy='120' r='72' fill='none' stroke='%23F2C14E' stroke-width='16' stroke-linecap='round' stroke-dasharray='271 452' transform='rotate(-90 120 120)'/%3E%3C/svg%3E">
 <link rel="preload" href="fonts/InstrumentSans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/InstrumentSerif.woff2" as="font" type="font/woff2" crossorigin>
@@ -6275,6 +6282,10 @@ buildRight(); applySettings(); syncPanel();
   let k = 'look'; try { k = localStorage.getItem('dial.setTab') || 'look'; } catch (e) {}
   show(tabs.querySelector('[data-st="' + k + '"]') ? k : 'look');
 })();
+</script>
+<script>
+// Dial can be put on a phone's home screen and then works without the internet (not inside the Mac app, which already does).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 </script>
 </body>
 </html>
