@@ -3689,7 +3689,7 @@ function buildRight() {
   // ---- Masking
   body.appendChild(group('masks', 'Masking', b => {
     b.appendChild(sub('Protect skin', '<button class="btn small" id="faceBtn" title="Drag a box round a person: colour edits leave their skin alone">+ Protect skin</button>', 2));
-    const fh = document.createElement('div'); fh.className = 'hint-text'; fh.id = 'faceHint'; fh.textContent = 'Drag a box round a person. Their face, neck, ears, arms and hands keep their own colours when you change warmth, tint, saturation or the colour looks; brightness still reaches them.'; b.appendChild(fh);
+    const fh = document.createElement('div'); fh.className = 'hint-text'; fh.id = 'faceHint'; fh.textContent = (matchMedia('(pointer: coarse)').matches ? 'Tap + Protect skin, then draw a circle round a person with your finger.' : 'Drag a box round a person.') + ' Their face, neck, ears, arms and hands keep their own colours when you change warmth, tint, saturation or the colour looks; brightness still reaches them.'; b.appendChild(fh);
     const fl = document.createElement('div'); fl.className = 'list'; fl.id = 'faceList'; b.appendChild(fl);
     const fk = ctlRow('faceKeep'); fk.id = 'faceKeepRow'; b.appendChild(fk);
     b.appendChild(sub('Masks', '', 2));
@@ -5335,7 +5335,7 @@ view.addEventListener('pointerup', e => {
   if (!state.tat && !state.wbPick && cur() && !state.cropping) toggleZoom(e);
 });
 view.addEventListener('pointercancel', e => { // the browser took the gesture over: finish, never leave half a stroke or a stuck pan
-  if (faceDrag) { faceDrag = null; setFaceTool(false); return; }
+  if (faceDrag) return faceUp(e);   // the phone took the touch away: use what was drawn so far, or stay ready for another try
   if (maskDrag) return maskUp(e);
   if (spotDrag) return spotUp(e);
   if (curveTATDrag) return curveTATUp(e);
@@ -5351,6 +5351,7 @@ view.addEventListener('pointerdown', e => {
   vpts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (vpts.size !== 2) return;
   if (maskDrag) maskUp(e); if (spotDrag) spotUp(e); if (curveTATDrag) curveTATUp(e); // the second finger means zoom, so close what one finger started
+  if (faceDrag) { faceDrag = null; updateToolClass(); }   // ... and a half-drawn circle is dropped (Protect skin stays on)
   if (pan) { pan = null; stage.classList.remove('panning'); }
   consumed = true;
   const [mx, my] = pinchMid(); pinch = { d: pinchDist(), mx, my, sl: stage.scrollLeft, st: stage.scrollTop };
@@ -5877,7 +5878,7 @@ function startFaceTool() {
   if (!cur()) return toast('Open a photo first');
   if (state.faceTool) return setFaceTool(false);
   $('details.group[data-g="masks"]').open = true;
-  setFaceTool(true); toast('Drag a box round a person');
+  setFaceTool(true); toast(matchMedia('(pointer: coarse)').matches ? 'Draw a circle round a person with your finger' : 'Drag a box round a person');
   loadFaceFinder().catch(() => {}); loadSkinFinder().catch(() => {});   // they load while you drag
 }
 async function mpFiles() {
@@ -5943,12 +5944,20 @@ function skinSoon(p) {
   for (const f of people(p.edit)) if (!skinLayers.has(p.id + '|' + f.id)) { missing = true; skinLayer(p, f).then(() => { faceMaskCache.clear(); if (cur() === p) render(); }, () => {}); }
   return missing;
 }
-function faceDown(e) { const [x, y] = normPt(e); view.setPointerCapture(e.pointerId); faceDrag = { x0: x, y0: y, x1: x, y1: y }; updateToolClass(); }
-function faceMove(e) { const [x, y] = normPt(e); faceDrag.x1 = x; faceDrag.y1 = y; drawToolOverlay(); }
+// A mouse drags a box from corner to corner. A finger (or pen) draws a line round the person, any shape: a circle,
+// a loop, a box. The box is then everything that line went round, so a circle that ends where it began still counts.
+function faceDown(e) { const [x, y] = normPt(e); try { view.setPointerCapture(e.pointerId); } catch (err) { } faceDrag = { x0: x, y0: y, x1: x, y1: y, pts: e.pointerType === 'mouse' ? null : [[x, y]] }; updateToolClass(); }
+function faceMove(e) {
+  const [x, y] = normPt(e), d = faceDrag;
+  if (d.pts) { d.pts.push([x, y]); d.x0 = Math.min(d.x0, x); d.x1 = Math.max(d.x1, x); d.y0 = Math.min(d.y0, y); d.y1 = Math.max(d.y1, y); }
+  else { d.x1 = x; d.y1 = y; }
+  drawToolOverlay();
+}
 async function faceUp() {
-  const d = faceDrag; faceDrag = null; setFaceTool(false);
+  const d = faceDrag; faceDrag = null;
   const x0 = Math.min(d.x0, d.x1), x1 = Math.max(d.x0, d.x1), y0 = Math.min(d.y0, d.y1), y1 = Math.max(d.y0, d.y1);
-  if (x1 - x0 < 0.02 || y1 - y0 < 0.02) { drawToolOverlay(); return toast('Drag a box round the whole person'); }
+  if (x1 - x0 < 0.02 || y1 - y0 < 0.02) { updateToolClass(); return toast(d.pts ? 'Too small. Draw a circle round the whole person' : 'Drag a box round the whole person'); }   // the tool stays on: try again straight away
+  setFaceTool(false);
   return findFaces(cur(), x0, y0, x1, y1);
 }
 // x0..y1: the box on the drawn frame (0..1). Finds the faces and the skin in it and protects them.
@@ -6061,7 +6070,15 @@ function drawFaceOverlay(W, H) {
     const g = geoOf(p, false); tctx.setLineDash([6, 5]);
     for (const f of people(p.edit)) for (const ov of f.ovals || []) { tctx.beginPath(); ov.forEach((q, i) => { const [a, b] = g.fwd(q[0], q[1]); i ? tctx.lineTo(a * W, b * H) : tctx.moveTo(a * W, b * H); }); tctx.closePath(); tctx.stroke(); }
   }
-  if (faceDrag) { tctx.setLineDash([]); const d = faceDrag; tctx.strokeRect(Math.min(d.x0, d.x1) * W, Math.min(d.y0, d.y1) * H, Math.abs(d.x1 - d.x0) * W, Math.abs(d.y1 - d.y0) * H); }
+  if (faceDrag) {
+    const d = faceDrag, px = W / (view.clientWidth || W);   // one screen pixel, in canvas pixels
+    if (d.pts) {   // the finger's own line, and (dashed) the box it makes
+      tctx.setLineDash([]); tctx.lineWidth = 3 * px; tctx.lineJoin = tctx.lineCap = 'round';
+      tctx.beginPath(); d.pts.forEach((q, i) => i ? tctx.lineTo(q[0] * W, q[1] * H) : tctx.moveTo(q[0] * W, q[1] * H)); tctx.stroke();
+      tctx.setLineDash([5 * px, 5 * px]); tctx.lineWidth = 1.5 * px; tctx.globalAlpha = .7;
+    } else { tctx.setLineDash([]); tctx.lineWidth = Math.max(1.5 * px, W / 700); }
+    tctx.strokeRect(Math.min(d.x0, d.x1) * W, Math.min(d.y0, d.y1) * H, Math.abs(d.x1 - d.x0) * W, Math.abs(d.y1 - d.y0) * H);
+  }
   tctx.restore();
 }
 
