@@ -801,7 +801,40 @@ html[data-lean] .stage canvas.view{box-shadow:0 0 0 1px rgba(255,255,255,.1)}
 .gchips,.ptools{display:none}
 .tsep{flex:0 0 1px;align-self:stretch;margin:4px 2px;background:var(--line)}
 /* ---------- a phone held upright (html.pui): like a phone's own photo editor ---------- */
-html.pui body{background:#000}
+html.pui,html.pui body{height:100%;overflow:hidden !important;overscroll-behavior:none}
+html.pui body{background:#000;height:100dvh}
+/* small, cheap movement (only opacity and transform, which a phone's graphics chip does without re-drawing anything) */
+@keyframes toolin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes sheetsnap{from{transform:translateY(14px)}to{transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  html.pui body:not([data-motion="off"]) #rightBody details.group.pcur > .gbody,html.pui body:not([data-motion="off"]) #rightSide.looks .side-looks{animation:toolin .2s cubic-bezier(.2,.8,.2,1) both}
+  html.pui body:not([data-motion="off"]) .side.right.snap{animation:sheetsnap .22s cubic-bezier(.2,.9,.2,1)}
+  html.pui body:not([data-motion="off"]) :is(.ptools button,header .btn,.stage-tools .btn,#presetList .item){transition:transform .12s ease-out,color .15s,border-color .15s}
+  html.pui body:not([data-motion="off"]) :is(.ptools button,header .btn,.stage-tools .btn,#presetList .item):active{transform:scale(.93)}
+  html.pui body:not([data-motion="off"]) .ptools button svg{transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+  html.pui body:not([data-motion="off"]) .ptools button.on svg{transform:translateY(-2px) scale(1.12)}
+}
+html[data-lean] dialog::backdrop{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;background:rgba(0,0,0,.72)}
+/* Settings, Export and the other windows on a phone: they come up from the bottom, full width, and every row stacks (name and explanation on top, the control underneath) */
+@media (max-width:520px){
+  dialog{width:100vw;max-width:100vw;max-height:92dvh;margin:auto 0 0;border-radius:20px 20px 0 0;border-left:0;border-right:0;border-bottom:0}
+  .dlg-head{padding:14px 16px}
+  .dlg-body{padding:6px 16px 20px}
+  .opt{flex-wrap:wrap;gap:8px 12px;padding:11px 0}
+  .opt .l{flex:1 1 100%;font-size:15px}
+  .opt .d{font-size:13px;line-height:1.45;margin-top:3px}
+  .opt:has(> .switch){flex-wrap:nowrap}
+  .opt:has(> .switch) .l{flex:1 1 0}
+  .opt .seg{max-width:100%;flex-wrap:wrap}
+  .opt .seg button{min-height:40px;padding:0 14px}
+  .opt input.txt,.opt select{min-height:42px;font-size:15px}
+  .opt > input.txt,.opt > select,.opt > input[type=range]{flex:1 1 100%}
+  .dlg-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+  .dlg-foot .btn{min-height:46px;padding:0 18px;flex:1;justify-content:center;font-size:14px}
+  .checks{grid-template-columns:1fr}
+  .shortcuts{font-size:13px}
+}
+#perfBox{position:fixed;left:6px;top:66px;z-index:99;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.78);color:#B8F5C4;font:600 11px/1.45 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
 html.pui .bg{display:none}
 html.pui body header{flex-wrap:nowrap;min-height:60px;height:60px;flex:0 0 60px;padding:8px 12px;gap:8px;background:transparent;border:0;box-shadow:none}
 html.pui body header .brand,html.pui body header .file{display:none}
@@ -5619,7 +5652,11 @@ stage.addEventListener('drop', e => openFiles(e.dataTransfer.files));
 document.addEventListener('dragover', e => { if ([...(e.dataTransfer?.types || [])].includes('Files')) e.preventDefault(); });
 document.addEventListener('drop', e => { if (e.defaultPrevented || ![...(e.dataTransfer?.types || [])].includes('Files')) return; e.preventDefault(); openFiles(e.dataTransfer.files); });
 document.addEventListener('paste', e => { const items = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith('image/')); if (items.length) openFiles(items.map(i => i.getAsFile())); });
-window.addEventListener('resize', () => { fitAndRender(); if (state.cropping) layoutCrop(); drawCurve(); });
+// On a phone the browser's address bar slides in and out and fires 'resize' each time. That is not worth re-fitting and re-drawing the photo
+// (three listeners did so): a change of height alone, under 110 px, is skipped on the upright phone layout.
+let skipResize = false, lastVW = innerWidth, lastVH = innerHeight;
+window.addEventListener('resize', () => { skipResize = document.documentElement.classList.contains('pui') && innerWidth === lastVW && Math.abs(innerHeight - lastVH) < 110; if (!skipResize) { lastVW = innerWidth; lastVH = innerHeight; } }, true);
+window.addEventListener('resize', () => { if (skipResize) return; fitAndRender(); if (state.cropping) layoutCrop(); drawCurve(); });
 
 /* ============================================================
    Export dialog
@@ -6156,7 +6193,9 @@ function sheetSet(stop) {
   if (typeof stop === 'boolean') stop = stop ? 'half' : 'closed';
   sheetStop = stop;
   if (!isPhone()) { rightSide.classList.remove('closed', 'half'); return rightSide.style.removeProperty('height'); }
+  const moved = rightSide.dataset.stop !== stop; rightSide.dataset.stop = stop;
   rightSide.classList.toggle('closed', stop === 'closed'); rightSide.classList.toggle('half', stop === 'half');
+  if (moved && document.documentElement.classList.contains('pui') && !noGlide()) { rightSide.classList.remove('snap'); void rightSide.offsetWidth; rightSide.classList.add('snap'); }
   rightSide.style.height = stop === 'half' ? sheetHalf() + 'px' : '';
   // the photo gets the space above the sheet; a full sheet keeps the half layout so the photo doesn't jump
   const space = (stop === 'closed' ? rightSide.offsetHeight : sheetHalf()) + 'px', up = stop !== 'closed';
@@ -6187,7 +6226,7 @@ function sheetUp(e) {
 for (const el of [sheetHandle, $('#panelTabs'), $('#rightSide > .side-head')]) { el.addEventListener('pointerdown', sheetDown); el.addEventListener('pointermove', sheetMove); el.addEventListener('pointerup', sheetUp); el.addEventListener('pointercancel', sheetUp); }
 // the header only swipes on phones; on desktop it's an ordinary panel again
 window.matchMedia('(max-width: 860px)').addEventListener('change', ev => { if (!ev.matches) { rightSide.style.removeProperty('height'); mainEl.style.removeProperty('--sheet-space'); } else sheetSet(sheetStop); });
-window.addEventListener('resize', () => { if (isPhone() && !sheetDrag) sheetSet(sheetStop); });
+window.addEventListener('resize', () => { if (skipResize) return; if (isPhone() && !sheetDrag) sheetSet(sheetStop); });
 // closed while there's nothing to edit (so "Open photos" is free), half once the first photo is in
 // and closed while the big dial is up, since the dial is the control then
 let sheetBeforeDial = null;
@@ -6202,7 +6241,7 @@ sheetSet('closed');
 // while a slider is dragged on a phone the sheet turns see-through, so you can watch the photo change
 let scrubArmed = null;
 function scrubEnd() { scrubArmed = null; for (const r of $$('.ctl.scrubbing', rightSide)) r.classList.remove('scrubbing'); rightSide.classList.remove('scrub'); }
-$('#rightBody').addEventListener('pointerdown', e => { if (isPhone() && e.target.matches('.ctl input[type=range]')) scrubArmed = e.target; });
+$('#rightBody').addEventListener('pointerdown', e => { if (isPhone() && !document.documentElement.classList.contains('pui') && e.target.matches('.ctl input[type=range]')) scrubArmed = e.target; });   // not in the upright phone look: there the panel never covers the photo, and hiding every control cost a 100 ms hitch
 $('#rightBody').addEventListener('input', e => { if (e.target !== scrubArmed || rightSide.classList.contains('scrub')) return; e.target.closest('.ctl').classList.add('scrubbing'); rightSide.classList.add('scrub'); });
 for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, scrubEnd);
 window.addEventListener('blur', scrubEnd);
@@ -6239,7 +6278,24 @@ function applyLayout() {
   placeLeft(); placeActions(); if (cur()) { fitAndRender(); if (state.cropping) layoutCrop(); }
 }
 for (const q of Object.values(foldMQ)) q.addEventListener('change', applyLayout);
-window.addEventListener('resize', applyLayout);
+window.addEventListener('resize', () => { if (!skipResize) applyLayout(); });
+
+/* ---------- speed meter: open Dial with ?perf=1 to switch it on (it stays on until ?perf=0). It shows what this very device really does. ---------- */
+{
+  const q = new URLSearchParams(location.search).get('perf'); try { if (q === '1') localStorage.setItem('dial.perf', '1'); if (q === '0') localStorage.removeItem('dial.perf'); } catch { }
+  let on = false; try { on = localStorage.getItem('dial.perf') === '1'; } catch { }
+  if (on) {
+    const box = Object.assign(document.createElement('div'), { id: 'perfBox' }); box.setAttribute('aria-hidden', 'true'); document.body.append(box);
+    const gaps = []; let last = performance.now(), longest = 0, longAt = 0;
+    try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (e.duration > longest || performance.now() - longAt > 4000) { longest = e.duration; longAt = performance.now(); } }).observe({ entryTypes: ['longtask'] }); } catch { }
+    (function tick(now) { gaps.push([now, now - last]); last = now; while (gaps.length && now - gaps[0][0] > 3000) gaps.shift(); requestAnimationFrame(tick); })(last);
+    setInterval(() => {
+      const now = performance.now(), sec = gaps.filter(g => now - g[0] < 1000), worst = Math.max(0, ...gaps.map(g => g[1])), v = $('#view'), de = document.documentElement;
+      if (now - longAt > 4000) longest = 0;
+      box.textContent = `${sec.length} fps · slowest frame ${Math.round(worst)} ms · longest task ${Math.round(longest)} ms\n${v.width}×${v.height} · screen ×${(window.devicePixelRatio || 1).toFixed(1)} · ${de.hasAttribute('data-lean') ? 'lean' : 'NOT lean'} · ${de.classList.contains('pui') ? 'upright' : de.dataset.layout || 'desktop'}${matchMedia('(display-mode: standalone)').matches ? ' · installed' : ''}\n${(navigator.userAgent.match(/(Chrome|Firefox|Version)\/[\d.]+/) || [''])[0]} · ${navigator.hardwareConcurrency || '?'} cores · ${navigator.deviceMemory || '?'} GB`;
+    }, 500);
+  }
+}
 
 /* ---------- phones, upright: the editor looks like a phone's own photo editor ----------
    One header row with round buttons and a gold Export pill, the photo on black, Undo / Redo / Compare / Dial mode under the photo,
